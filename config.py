@@ -1,14 +1,20 @@
-# backend/config.py
-
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://localhost/proctoring_db"
-)
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
 
-JWT_SECRET = "CHANGE_THIS_IN_PROD"
+
+DATABASE_URL = _require_env("DATABASE_URL")
+
+# Render can provide postgres:// URLs; SQLAlchemy expects postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+JWT_SECRET = _require_env("JWT_SECRET")
 JWT_ALGORITHM = "HS256"

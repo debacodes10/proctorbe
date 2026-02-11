@@ -163,5 +163,36 @@ Risk levels:
 
 - CORS currently allows `http://localhost:3000`.
 - Database tables are auto-created on app startup (`Base.metadata.create_all`).
-- `JWT_SECRET` is hardcoded in code if env var is missing; set a secure value in production.
+- `JWT_SECRET` falls back to a default if env var is missing; set a secure value in production.
+- `postgres://` database URLs are normalized to `postgresql://` for SQLAlchemy compatibility.
 
+## Deploy On Render
+
+Use these settings in Render Web Service:
+
+- Build command: `pip install -r requirements.txt`
+- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Runtime: Python `3.11.11` (also defined in `runtime.txt`)
+
+Required environment variables:
+- `DATABASE_URL` (from Render PostgreSQL)
+- `JWT_SECRET` (long random secret)
+
+Recommended:
+- `PYTHON_VERSION=3.11.11` in Render env vars
+
+## Render Build Troubleshooting
+
+If build fails, check Render logs for one of these common signatures:
+
+1. `No matching distribution found for mediapipe`
+   - Cause: wrong Python version (usually 3.12/3.13).
+   - Fix: use Python 3.11.11 (`runtime.txt` + `PYTHON_VERSION`).
+
+2. `Failed building wheel for ...` (OpenCV-related)
+   - Cause: GUI OpenCV package in headless Linux.
+   - Fix: use `opencv-python-headless` (already set in `requirements.txt`).
+
+3. App starts but crashes with DB URL errors
+   - Cause: `postgres://` URL format.
+   - Fix: URL normalization is now handled in `config.py`.
