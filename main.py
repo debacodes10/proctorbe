@@ -4,12 +4,13 @@ from models import Base
 from routes import auth as auth_routes
 from routes import exams, sessions, events, admin, cv
 from fastapi.middleware.cors import CORSMiddleware
+from config import CORS_ORIGINS
 
 app = FastAPI(title="Online Proctoring Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://proctorfe.vercel.app/"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
