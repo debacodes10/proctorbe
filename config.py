@@ -24,12 +24,19 @@ def _normalize_database_url(raw_url: str) -> str:
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-    # Render Postgres requires SSL. Auto-add sslmode=require if missing.
-    # This preserves existing query params and avoids overriding explicit sslmode.
-    if os.getenv("RENDER", "").lower() == "true" and db_url.startswith("postgresql://"):
+    # Render Postgres requires SSL for external connections. Auto-add sslmode=require
+    # for Render-like hosts when missing, while preserving existing query params.
+    if db_url.startswith("postgresql://"):
         parts = urlsplit(db_url)
+        host = (parts.hostname or "").lower()
+        is_render_host = host.endswith(".render.com") or host.startswith("dpg-")
+        is_local_host = host in {"localhost", "127.0.0.1"}
+        should_require_ssl = os.getenv("RENDER", "").lower() == "true" or (
+            is_render_host and not is_local_host
+        )
+
         query = dict(parse_qsl(parts.query, keep_blank_values=True))
-        if "sslmode" not in query:
+        if should_require_ssl and "sslmode" not in query:
             query["sslmode"] = "require"
             db_url = urlunsplit(
                 (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
